@@ -16,6 +16,7 @@ public class Dialogue : MonoBehaviour
     [Space]
     public string characterNameToDisplay;
     public int characterImage;
+    public int backgroundImage;
     public string dialogText;
     public int additionalEffects = 0;
     public int position = 0;
@@ -44,19 +45,27 @@ public class Dialogue : MonoBehaviour
     public int consequenceID;
     public int bonusRep;
     public int bonusRepID;
+    public bool stopImage;
+    public int soundToPlay;
 
 
 
     public void PassDataToFiller()
     {
-        if (consequenceID > 0 || bonusRep != 0)
+        if (consequenceID > 0 || bonusRep != 0 || stopImage)
         {
-            ChatBox_Filler.Instance.PassRelationshipAndConsequences(consequenceID, bonusRep, bonusRepID);
+            ChatBox_Filler.Instance.PassRelationshipAndConsequences(consequenceID, bonusRep, bonusRepID, stopImage);
         }
+        /*if (soundToPlay > 0)
+        {
+            //ChatBox_Filler.Instance.PassMusic(soundToPlay);
+        }*/
+        
+
         switch (currentType)
         {
             case typeOfDialogue.description:
-                ChatBox_Filler.Instance.PassedDescription(dialogText, speedOfLetters, nextDialogueID);
+                ChatBox_Filler.Instance.PassedDescription(dialogText, speedOfLetters, nextDialogueID, characterImage, backgroundImage);
                 break;
             case typeOfDialogue.dialogue:
                 ChatBox_Filler.Instance.PassedDialogue(characterNameToDisplay, characterImage, dialogText, additionalEffects, position, speedOfLetters, nextDialogueID);
@@ -74,7 +83,7 @@ public class Dialogue : MonoBehaviour
                 ChatBox_Filler.Instance.Finishing();
                 break;
             case typeOfDialogue.stop:
-
+                ChatBox_Filler.Instance.StopTrigger();
                 break;
         }
 

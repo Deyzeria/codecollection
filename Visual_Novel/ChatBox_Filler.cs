@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ChatBox_Filler : MonoBehaviour
@@ -22,7 +23,14 @@ public class ChatBox_Filler : MonoBehaviour
     [HideInInspector]
     public GameObject buttonAnswerOne, buttonAnswerTwo, buttonAnswerThree;
     [HideInInspector]
-    public Text buttonTextOne, buttonTextTwo, buttonTextThree;
+    public TextMeshProUGUI buttonTextOne, buttonTextTwo, buttonTextThree;
+
+    [HideInInspector]
+    public Animator AchPopUp;
+    [HideInInspector]
+    public Image AchImage;
+    [HideInInspector]
+    public Text AchText;
 
     [HideInInspector]
     public GameObject inputNameBox;
@@ -41,19 +49,26 @@ public class ChatBox_Filler : MonoBehaviour
     [Space]
     public List<CharacterHolder> characters;
     int nextIdSave;
+    int currIdSave;
     int ending;
+    
 
     [HideInInspector]
     public List<int> questionId;
     public List<bool> causesList;
     public List<int> reputation;
     public List<int> finishResults;
+    public List<string> achievementNames;
 
+    [Space]
+    public List<GameObject> musicPlayers;
     public List<Sprite> bcgImageSprite;
+    public List<Sprite> textboxSpire;
+    [Space]
     public List<Sprite> spiderImageSprite;
     public List<Sprite> buffImageSprite;
     public List<Sprite> deerImageSprite;
-
+    [Space]
     public bool newGame;
     public int savedStage;
 
@@ -62,29 +77,50 @@ public class ChatBox_Filler : MonoBehaviour
         Instance = this;
         leftCharacterName = leftCharacterNameBox.GetComponentInChildren<TextMeshProUGUI>();
         rightCharacterName = rightCharacterNameBox.GetComponentInChildren<TextMeshProUGUI>();
-
     }
     
-    public void SavePlayer()
+    public void ReturnToScreen()
     {
-        SaveSystem.SavePlayer(this);
+        GameObject objs = GameObject.FindGameObjectWithTag("GameController");
+        Destroy(objs);
+        SceneManager.LoadScene(0);
     }
 
-    public void LoadPlayer()
+    public void SavePlayer()
     {
-        PlayerData data = SaveSystem.LoadPlayer();
-        newGame = data.secondGame;
-        causesList = data.causesList;
-        reputation = data.reputation;
-        savedStage = data.savedStage;
+        SaveSystem.SavePlayer(currIdSave, newGame, reputation[0], reputation[1], reputation[2], causesList[1], causesList[3], causesList[4]);
     }
 
     private void Start()
     {
-        if (!newGame)
+        chrImage.enabled = false;
+        mainWindow.SetActive(false);
+        leftCharacterNameBox.SetActive(false);
+        rightCharacterNameBox.SetActive(false);
+
+        /*if (!newGame)
         {
             characters[0].characterDialogue[0].PassDataToFiller();
         } else
+        {
+            PassData(savedStage);
+        }*/
+    }
+
+    public void StartGame()
+    {
+        mainWindow.SetActive(true);
+        GameObject objs = GameObject.FindGameObjectWithTag("GameController");
+        if (objs != null)
+        {
+            Debug.LogError("Aleph");
+            newGame = SavedData.Instance.newGame;
+            causesList = SavedData.Instance.causesList;
+            reputation = SavedData.Instance.reputation;
+            savedStage = SavedData.Instance.savedStage;
+            PassData(savedStage);
+        }
+        else
         {
             PassData(savedStage);
         }
@@ -112,6 +148,8 @@ public class ChatBox_Filler : MonoBehaviour
     //Call this to pass dialogue to the Chatbox filler. 
     public void PassedDialogue(string name, int image, string text, int effects, int pos, float speed, int nextID)
     {
+        main_textMeshPro.margin = new Vector4(10, 60, 10, 0);
+        currIdSave = nextIdSave;
         nextIdSave = nextID;
         if (text.Contains("@"))
         {
@@ -149,8 +187,8 @@ public class ChatBox_Filler : MonoBehaviour
             case null:
                 break;
         }
-            
 
+        ChangeImage(image);
 
         if (pos == 0)
         {
@@ -180,12 +218,28 @@ public class ChatBox_Filler : MonoBehaviour
         {
             tempIdText = (numb - (tempIdLink * 100)) - 1;
         }
-        SavePlayer();
+
+        mainWindow.GetComponent<Image>().sprite = textboxSpire[tempIdLink];
+
+        //SavePlayer();
         characters[tempIdLink].characterDialogue[tempIdText].PassDataToFiller();
     }
 
-    public void PassedDescription(string text, float speed, int nextID)
+    public void PassMusic(int id)
     {
+        if (musicPlayers[id].activeSelf)
+        {
+            musicPlayers[id].SetActive(false);
+        } else
+        {
+            musicPlayers[id].SetActive(true);
+        }
+    }
+
+    public void PassedDescription(string text, float speed, int nextID, int image, int bcgimage)
+    {
+        main_textMeshPro.margin = new Vector4(10, 10, 10, 0);
+        mainWindow.GetComponent<Image>().sprite = textboxSpire[0];
         if (text.Contains("@MyName"))
         {
             text = text.Replace("@MyName", characterNameToDisplay);
@@ -194,14 +248,23 @@ public class ChatBox_Filler : MonoBehaviour
         {
             text = text.Replace("@SpiderName", spiderName);
         }
-        if (name.Contains("@DeerName"))
+        if (text.Contains("@DeerName"))
         {
             text = text.Replace("@DeerName", deerName);
         }
-        if (name.Contains("@BuffName"))
+        if (text.Contains("@BuffName"))
         {
             text = text.Replace("@BuffName", buffName);
         }
+
+        if (bcgimage != 0)
+        {
+            bgImage.sprite = bcgImageSprite[bcgimage];
+        }
+
+        ChangeImage(image);
+
+        currIdSave = nextIdSave;
         nextIdSave = nextID;
         leftCharacterNameBox.SetActive(false);
         rightCharacterNameBox.SetActive(false);
@@ -210,13 +273,15 @@ public class ChatBox_Filler : MonoBehaviour
 
     public void Questionaire(string textOne, string textTwo, string textThree, int idOne, int idTwo, int idThree)
     {
-
+        currIdSave = nextIdSave;
+        continueButton.interactable = false;
         questionId[0] = idOne;
         questionId[1] = idTwo;
         questionId[2] = idThree;
 
         if(idThree > 0)
         {
+            //Debug.Log(textOne);
             buttonTextOne.text = textOne;
             buttonTextTwo.text = textTwo;
             buttonTextThree.text = textThree;
@@ -225,6 +290,7 @@ public class ChatBox_Filler : MonoBehaviour
             buttonAnswerThree.SetActive(true);
         } else
         {
+            //Debug.Log(textOne);
             buttonTextOne.text = textOne;
             buttonTextTwo.text = textTwo;
             buttonAnswerOne.SetActive(true);
@@ -234,6 +300,7 @@ public class ChatBox_Filler : MonoBehaviour
 
     public void Split(int clause, int idOne, int idTwo)
     {
+        currIdSave = nextIdSave;
         Debug.Log("Split Before");
         if(causesList[clause] == true)
         {
@@ -252,12 +319,13 @@ public class ChatBox_Filler : MonoBehaviour
         }
         else
         {
+            //musicPlayers[0].SetActive(false);
             finishedProcess = true;
         }
         
     }
 
-    public void PassRelationshipAndConsequences(int consequenceID, int bonusRep, int bonusRepID)
+    public void PassRelationshipAndConsequences(int consequenceID, int bonusRep, int bonusRepID, bool stopImage)
     {
         if (consequenceID > 0)
         {
@@ -267,11 +335,16 @@ public class ChatBox_Filler : MonoBehaviour
         {
             reputation[bonusRepID] += bonusRep;
         }
+        if (stopImage)
+        {
+            chrImage.enabled = false;
+        }
     }
 
 
     public void AnswerKeyPress(int number)
     {
+        continueButton.interactable = true;
         PassData(questionId[number]);
         questionId[0] = 0;
         questionId[1] = 0;
@@ -316,38 +389,53 @@ public class ChatBox_Filler : MonoBehaviour
         PassData(nextIdSave);
 
     }
-
-    public void Stop()
+    
+    public void StopTrigger()
+    {
+        StartCoroutine(Stop());
+    }
+    public IEnumerator Stop()
     {
         mainWindow.SetActive(false);
-    }
-
-    public void ChangeBackground(int newB)
-    {
-        if (newB != 0)
+        continueButton.interactable = false;
+        //display achievement
+        if (newGame)
         {
-            bgImage.sprite = bcgImageSprite[newB];
+            int resultToSend = reputation[2] + 4 + ((reputation[1] + 4) * 10) + ((reputation[0] + 4) * 100);
+            gameObject.GetComponent<Leaderboard_Push>().result = resultToSend;
+            gameObject.GetComponent<Leaderboard_Push>().playerName = characterNameToDisplay;
+            gameObject.GetComponent<Leaderboard_Push>().SubmitScore();
         }
+        yield return new WaitForSecondsRealtime(3f);
+        AchText.text += achievementNames[ending];
+        AchPopUp.SetTrigger("AchievementPopUp");
+        yield return new WaitForSecondsRealtime(3f);
+        ReturnToScreen();
+
     }
 
-    public void ChangeImage(int chr, int newI)
+    public void ChangeImage(int newI)
     {
+        int chr = (newI / 100);
+        newI = newI - (chr * 100);
+
         if (newI != 0)
         {
+            chrImage.enabled = true;
             switch (chr)
             {
                 case 0:
+                    chrImage.sprite = spiderImageSprite[newI];
                     break;
                 case 1:
-                    chrImage.sprite = spiderImageSprite[newI];
+                    chrImage.sprite = deerImageSprite[newI];
                     break;
                 case 2:
                     chrImage.sprite = buffImageSprite[newI];
                     break;
-                case 3:
-                    chrImage.sprite = deerImageSprite[newI];
-                    break;
+
             }
+            //chrImage.sprite = characterTags[chr][newI];
         }
     }
 
@@ -361,7 +449,7 @@ public class ChatBox_Filler : MonoBehaviour
         main_textMeshPro.text = dialogText;
         int totalVisibleCharacters = dialogText.Length;
         int counter = 0;
-
+        //musicPlayers[0].SetActive(true);
         while (!finishedProcess)
         {
             int visibleCount = counter % (totalVisibleCharacters + 1);
@@ -376,6 +464,7 @@ public class ChatBox_Filler : MonoBehaviour
 
             yield return new WaitForSeconds(speedOfLetters);
         }
+        //musicPlayers[0].SetActive(false);
         main_textMeshPro.maxVisibleCharacters = totalVisibleCharacters;
         finishedProcess = true;
     }
